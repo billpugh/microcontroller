@@ -21,8 +21,8 @@ Outputs:
 
 **Warp engine**
 
-2 Fuel tanks, 12", 18 LEDs each, connected to same pin
-1 warp core, 8 LED stick
+* 2 Fuel tanks, 12", 18 LEDs each, connected to same pin
+* 1 warp core, 8 LED stick
 
 When off:
 
