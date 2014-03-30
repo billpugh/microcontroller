@@ -7,7 +7,6 @@
 //
 
 #include "RNLights.h"
-#include <stdlib.h>
 
 // 
 RNLights::RNLights(uint16_t numPixels) : numPixels(numPixels) {

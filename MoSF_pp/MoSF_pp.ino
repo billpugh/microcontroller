@@ -1,4 +1,6 @@
+
 #include <Adafruit_NeoPixel.h>
+#include "RNLightsNeoPixel.h"
 
 const uint8_t anomalyCollector = 0;
 const uint8_t particleCollector = 1;
@@ -13,7 +15,7 @@ const uint8_t inPin[] = {
 const uint8_t outPin [] = { 
   16, 18, 20, 22, 24 };
 const uint8_t numLEDs [] = {
-  4, 17, 20, 22, 24 };
+  4, 17, 8, 8, 15 };
 
 float level[CONTROLS];
 const uint16_t rampUp [] = {
@@ -36,13 +38,14 @@ Adafruit_NeoPixel strip[CONTROLS] =
   Adafruit_NeoPixel(numLEDs[3], outPin[3], NEO_GRB + NEO_KHZ800),
   Adafruit_NeoPixel(numLEDs[4], outPin[4], NEO_GRB + NEO_KHZ800)};
 
-Adafruit_NeoPixel colors[CONTROLS] = 
+RNLightsNeoPixel lights[CONTROLS] = 
 {
-  Adafruit_NeoPixel(numLEDs[0], 0, NEO_GRB + NEO_KHZ800),
-  Adafruit_NeoPixel(numLEDs[1], 0, NEO_GRB + NEO_KHZ800),
-  Adafruit_NeoPixel(numLEDs[2], 0, NEO_GRB + NEO_KHZ800),
-  Adafruit_NeoPixel(numLEDs[3], 0, NEO_GRB + NEO_KHZ800),
-  Adafruit_NeoPixel(numLEDs[4], 0, NEO_GRB + NEO_KHZ800)};
+  RNLightsNeoPixel(strip[0]),
+   RNLightsNeoPixel(strip[1]),
+    RNLightsNeoPixel(strip[2]),
+     RNLightsNeoPixel(strip[3]),
+          RNLightsNeoPixel(strip[5]),
+  };
 
 
 
@@ -50,42 +53,45 @@ uint8_t on[CONTROLS];
 unsigned long lastUpdate;
 
 void p(char *fmt, ... ){
-  char tmp[128]; // resulting string limited to 128 chars
+  char tmp[256]; // resulting string limited to 128 chars
   va_list args;
   va_start (args, fmt );
-  vsnprintf(tmp, 128, fmt, args);
+  vsnprintf(tmp, 256, fmt, args);
   va_end (args);
   Serial.print(tmp);
 }
 
 void setup() {
   Serial.begin(115200);
+  lights[fuelTank].setAllPixelColors(128,0,0);
+  lights[engine].setAllPixelColors(0,0,80);
+  lights[computer].setAllPixelColors(0,0,80);
+  lights[particleCollector].setAllPixelColors(0,200,0);
+  lights[anomalyCollector].setAllPixelColors(128,0,64);
+  
   for(int i = 0; i < CONTROLS; i++) {
     pinMode(inPin[i], INPUT);
     on[i] = 0;
     level[i] = 0.0f;
-    strip[i].begin();
-    strip[i].show();
     if (digitalRead(inPin[i]))
       p("%s on\n", name[i]);
+    lights[i].show();
   }
+  
   lastUpdate = millis();
 }
-
 
 void showStrips() {
   for(int i = 0; i < CONTROLS; i++) {
     int brightness = (brightnessOn[i] - brightnessOff[i]) * level[i] + brightnessOff[i];
-    strip[i].setBrightness(brightness);
-    for(int j = 0; j < numLEDs[i]; j++) 
-      strip[i].setPixelColor(j, colors[i].getPixelColor(j));
+    lights[i].setBrightness(brightness);
+    lights[i].show();
   }
-  for(int i = 0; i < CONTROLS; i++) 
-    strip[i].show();
 }
 
-
-
+uint8_t getInput(uint8_t control) {
+   return digitalRead(inPin[control]);
+}
 
 void loop() {
   uint8_t value;
@@ -93,23 +99,19 @@ void loop() {
   float delta = (float)(ms - lastUpdate);
 
   for(int i = 0; i < CONTROLS; i++) {
-    uint8_t value = digitalRead(inPin[i]);
+    uint8_t value = getInput(i);
     if (on[i] != value) {
       on[i] = value;
-    } 
-    else if (value) {
+    } else if (value) {
       level[i] += delta / rampUp[i];
       if (level[i] > 1.0f)
         level[i] = 1.0f;
-    } 
-    else {
+    } else {
       level[i] -= delta / rampDown[i];
       if (level[i] < 0.0f)
         level[i] = 0.0f;
     }
-    
   }
-
 }
 
 

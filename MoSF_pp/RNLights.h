@@ -9,7 +9,7 @@
 #ifndef __PlatformTest0__RNLights__
 #define __PlatformTest0__RNLights__
 
-#include <stdint.h>
+#include <Arduino.h>
 
 
 class RNLights {

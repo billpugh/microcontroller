@@ -6,9 +6,8 @@ RNLightsNeoPixel::RNLightsNeoPixel(Adafruit_NeoPixel & strip) :
   strip.begin();
 };
 
-unsigned long RNLightsNeoPixel::show() {
+void RNLightsNeoPixel::show() {
  
-  unsigned long ms_start = micros();
   if (fullBrightness)
    for(int i = 0; i < getNumPixels(); i++) {
     uint8_t r,g,b;
@@ -25,8 +24,6 @@ unsigned long RNLightsNeoPixel::show() {
     strip.setPixelColor(i, r, g, b);
     }
 }
-  unsigned long ms_end = micros();
-  
+
   strip.show();
-  return ms_end - ms_start;
 }
