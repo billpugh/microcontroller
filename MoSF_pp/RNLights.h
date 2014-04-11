@@ -9,7 +9,7 @@
 #ifndef __PlatformTest0__RNLights__
 #define __PlatformTest0__RNLights__
 
-#include <Arduino.h>
+#include <stdint.h>
 
 
 class RNLights {
@@ -26,11 +26,13 @@ public:
     void reset();
     void rotate(bool up);
     void shift(bool up);
-    void fade(uint8_t amount=1);
-    void fadeMultiply(uint8_t amount=255);
+    void fade(uint8_t amount=1, uint8_t minimum=0);
+    void fadeMultiply(uint8_t amount=255, uint8_t minimum=0);
     void setPixelColor(uint16_t pixel, uint8_t red, uint8_t green, uint8_t blue);
     void setAllPixelColors(uint8_t red, uint8_t green, uint8_t blue);
     void getPixelColor(uint16_t pixel, uint8_t &red, uint8_t &green, uint8_t &blue);
+     void copyPixelColor(uint16_t fromPixel, uint16_t toPixel);
+   
     uint8_t getPixelRed(uint16_t pixel);
     uint8_t getPixelGreen(uint16_t pixel);
     uint8_t getPixelBlue(uint16_t pixel);

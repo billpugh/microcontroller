@@ -18,7 +18,7 @@ class RNLightsNeoPixel : public RNLights {
 public:
     RNLightsNeoPixel(Adafruit_NeoPixel & strip);
     
-    void show();
+    unsigned long show();
     
 private:
    Adafruit_NeoPixel & strip;

@@ -60,6 +60,8 @@ When off:
 
 When on:
 
+ -
+
  - center light pulses
  - green particles chase, constant direction and speed
 
