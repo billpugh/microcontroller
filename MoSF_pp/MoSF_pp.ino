@@ -16,25 +16,27 @@ const uint8_t CONTROLS = 5;
 //  -1 = always on
 //  -2 = on if (millis() % 1000) < 500)
 //  -3 = on if (millis() % 1000) >= 500)
+//  -4 = on if (millis() % 16000 < 8000)
 const int8_t inPin[] = {
-  1, -2, -3, 5, 5};
+//   3, -2, -3, 1, 1};
+  -4, -2, -3, -4, -4};
 const uint8_t outPin [] = { 
-  15, 17, 19, 21, 23 };
+  15, 17, 19, 2, 23 };
 const uint8_t numLEDs [] = {
   13, 13, 13, 8, 15 };
 
 float level[CONTROLS];
 const uint16_t rampUp [] = {
-  1000, 300, 300, 1000, 1000};
+  1000, 800, 800, 4000, 2000};
 const uint16_t rampDown [] = {
-  500, 300, 300, 500, 500};
+  1000, 800, 800, 700, 700};
 const uint8_t brightnessOn [] = {
   255, 255, 255, 255, 80};
 const uint8_t brightnessOff [] = {
   40,  40,   40,  60, 10};
 
 const char* name[] = { 
-  "anomaly collector", "particle collector", "computer", "engine", "fuel tank" };
+  "particle collector", "left orb", "right orb", "engine", "fuel tank" };
 
 Adafruit_NeoPixel strip[CONTROLS] = 
 {
@@ -71,22 +73,54 @@ void p(char *fmt, ... ){
 CHSV hsv;
 CRGB rgb;
 
+
+float easeInOutQuad(float t) {
+  t = t*2;
+  if (t < 1)
+    return t*t/2;
+  t -= 2;
+  return 1-t*t/2;
+}
+
+float easeInOutCubic(float t) {
+  t = t*2;
+  if (t < 1)
+    return t*t*t/2;
+  t -= 2;
+  return 1+t*t*t/2;
+}
+
+void setOrbColor(uint8_t control, uint16_t pixel) {
+  uint16_t hue = (random(32) + 256 - 16) % 256;
+  hsv.h = hue;
+  hsv.v = random(64) + 128 + 64;
+  hsv.s = 200;
+  hsv2rgb_rainbow(hsv,rgb);
+  hsv.s = 255;
+  hsv.v = 255;
+  lights[control].setPixelColor(pixel, rgb.r, rgb.g, rgb.b);
+}
+
 void setup() {
   delay(1000);
   Serial.begin(115200);
   pinMode(13, OUTPUT); 
   digitalWrite(13, HIGH);
 
-  Serial.println("Starting v3");
+  Serial.println("Starting v4");
   delay(1000);
   digitalWrite(13, LOW);
   hsv.s = 255;
   hsv.v = 255;
   lights[fuelTank].setAllPixelColors(128,0,0);
   lights[engine].setAllPixelColors(0,0,80);
-  lights[leftOrb].setAllPixelColors(0,80,80);
-  lights[rightOrb].setAllPixelColors(80,80,0);
+  for(int i = 0; i < numLEDs[leftOrb]; i++)
+    setOrbColor(leftOrb, i);
+  for(int i = 0; i < numLEDs[rightOrb]; i++)
+    setOrbColor(rightOrb, i);
+
   lights[particleCollector].setAllPixelColors(0,minimumParticleCollector,0);
+
   Serial.println("Set pixel colors");
 
   for(int i = 0; i < CONTROLS; i++) {
@@ -100,29 +134,27 @@ void setup() {
     lights[i].show();
     p("%s initialized\n", name[i]);
   }
-  delay(5000);
+  for(float f = 0.0; f <= 1.0; f += 0.05) 
+    p("%4f %4f\n", f, easeInOutQuad(f));
+  
+  for(int i = 0; i <= 255; i++) {
+    lights[fuelTank].setBrightness(i);
+    lights[fuelTank].show();
+    delay(10);
+  }
+  delay(100);
   lastUpdate = millis();
-}
-
-float easeInOutQuad(float t) {
-  t = t*2;
-  if (t < 1)
-    return t*t/2;
-  t -= 2;
-  return 1-t*t*t/2;
-}
-
-float easeInOutCubic(float t) {
-  t = t*2;
-  if (t < 1)
-    return t*t*t/2;
-  t -= 2;
-  return 1+t*t*t/2;
 }
 
 void showStrips() {
   for(int i = 0; i < CONTROLS; i++) {
-    int brightness = (brightnessOn[i] - brightnessOff[i]) * easeInOutQuad(level[i]) + brightnessOff[i];
+
+    float lvl = level[i];
+    if (i == leftOrb || i == rightOrb) 
+      lvl *= level[engine];
+    int brightness;
+//    brightness = (brightnessOn[i] - brightnessOff[i]) * lvl + brightnessOff[i];
+    brightness = (brightnessOn[i] - brightnessOff[i]) * easeInOutQuad(lvl) + brightnessOff[i];
     lights[i].setBrightness(brightness);
     lights[i].show();
   }
@@ -137,6 +169,8 @@ uint8_t getInput(uint8_t control) {
     return (millis() % 1000) < 500;
   case -3:
     return (millis() % 1000) >= 500;
+  case -4:
+    return (millis() % 16000) < 8000;
   default: 
     return digitalRead(pin);
   }
@@ -178,16 +212,19 @@ void updateEngine() {
     return;
 
   int mode = engineTick++;
-  lights[engine].shift(true);
-  if (mode % 4 == 0) {
+  lights[engine].shift(false);
+  uint16_t pixel = numLEDs[engine]-1;
+  uint8_t brightness = 100+random(50);
+  if (mode % 5 == 0 || random(8) == 0) {
+    uint8_t b2 = brightness * level[engine];
     if (on[engine])
-      lights[engine].setPixelColor(0,150, 150, 150);
+      lights[engine].setPixelColor(pixel,b2, b2, brightness);
     else
-      lights[engine].setPixelColor(0, 0,0, 150);
+      lights[engine].setPixelColor(pixel, 0,0, brightness);
   } 
   else {
     if (on[engine])
-      lights[engine].setPixelColor(0,0, 0, 100);
+      lights[engine].setPixelColor(pixel,0, 0, brightness-20);
   }
 }
 
@@ -216,11 +253,8 @@ void updateOrb(uint8_t control) {
     rotateUpAllButFirst(control);
   else
     rotateDownAllButFirst(control);
-  uint16_t hue = (random(32) + 256 - 16) % 256;
   uint8_t pixel = random(numLEDs[control]);
-  hsv.h = hue;
-  hsv2rgb_rainbow(hsv,rgb);
-  lights[control].setPixelColor(pixel, rgb.r, rgb.g, rgb.b);
+  setOrbColor(control, pixel);
 }
 
 
@@ -269,25 +303,31 @@ void loop() {
   uint8_t value;
   unsigned long ms = millis();
   float delta = (float)(ms - lastUpdate);
-
+  lastUpdate = ms;
   for(int i = 0; i < CONTROLS; i++) {
     uint8_t value = getInput(i);
     if (on[i] != value) {
       on[i] = value;
       if (value)
-        p("%s on", name[i]);
+        p("%s on\n", name[i]);
       else
-        p("%s off", name[i]);
+        p("%s off\n", name[i]);
     } 
     else if (value) {
-      level[i] += delta / rampUp[i];
-      if (level[i] > 1.0f)
-        level[i] = 1.0f;
+      if (level[i] < 1.0f) {
+        level[i] += delta / rampUp[i];
+        if (level[i] > 1.0f)
+          level[i] = 1.0f;
+        p("%f %s\n", level[i], name[i]);
+      }
     } 
     else {
-      level[i] -= delta / rampDown[i];
-      if (level[i] < 0.0f)
-        level[i] = 0.0f;
+      if (level[i] > 0.0f) {
+        level[i] -= delta / rampDown[i];
+        if (level[i] < 0.0f)
+          level[i] = 0.0f;
+        p("%f %s\n", level[i], name[i]);
+      }
     }
   }
   updateParticleCollector();
@@ -298,6 +338,7 @@ void loop() {
   delay(50);
   tick++;
 }
+
 
 
 
