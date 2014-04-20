@@ -18,22 +18,22 @@ const uint8_t CONTROLS = 5;
 //  -3 = on if (millis() % 1000) >= 500)
 //  -4 = on if (millis() % 16000 < 8000)
 const int8_t inPin[] = {
-//   3, -2, -3, 1, 1};
-  -4, -2, -3, -4, -4};
+   3, -2, -3, 1, 1};
+//  -4, -2, -3, -4, -4};
 const uint8_t outPin [] = { 
-  15, 17, 19, 2, 23 };
+  15, 17, 19, 21, 23 };
 const uint8_t numLEDs [] = {
   13, 13, 13, 8, 15 };
 
 float level[CONTROLS];
 const uint16_t rampUp [] = {
-  1000, 800, 800, 4000, 2000};
+  1000, 300, 300, 4000, 2000};
 const uint16_t rampDown [] = {
-  1000, 800, 800, 700, 700};
+  1000, 300, 300, 1500, 4000};
 const uint8_t brightnessOn [] = {
-  255, 255, 255, 255, 80};
+  255, 200, 200, 255, 80};
 const uint8_t brightnessOff [] = {
-  40,  40,   40,  60, 10};
+  40,  10, 10,  60, 10};
 
 const char* name[] = { 
   "particle collector", "left orb", "right orb", "engine", "fuel tank" };
@@ -132,10 +132,7 @@ void setup() {
     if (getInput(i))
       p("%s on\n", name[i]);
     lights[i].show();
-    p("%s initialized\n", name[i]);
   }
-  for(float f = 0.0; f <= 1.0; f += 0.05) 
-    p("%4f %4f\n", f, easeInOutQuad(f));
   
   for(int i = 0; i <= 255; i++) {
     lights[fuelTank].setBrightness(i);
@@ -264,11 +261,6 @@ void updateParticleCollector() {
 
   if (!collectingParticle && on[particleCollector] && random(8) == 0) {
     collectingParticle = true;
-    Serial.println("Starting particle collection");
-    for(int i = 0; i < numLEDs[particleCollector]; i++) {
-      p("%3d ", lights[particleCollector].getPixelGreen(i));
-    }
-    Serial.println();
   }
   uint16_t g;
   if (collectingParticle) {
@@ -318,7 +310,6 @@ void loop() {
         level[i] += delta / rampUp[i];
         if (level[i] > 1.0f)
           level[i] = 1.0f;
-        p("%f %s\n", level[i], name[i]);
       }
     } 
     else {
@@ -326,7 +317,6 @@ void loop() {
         level[i] -= delta / rampDown[i];
         if (level[i] < 0.0f)
           level[i] = 0.0f;
-        p("%f %s\n", level[i], name[i]);
       }
     }
   }
