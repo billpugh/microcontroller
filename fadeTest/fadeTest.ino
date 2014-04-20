@@ -2,7 +2,7 @@
 #include <hsv2rgb.h>
 #include "RNLightsNeoPixel.h"
 
-#define PIN 2
+#define PIN 18
 
 void p(char *fmt, ... ){
   char tmp[256]; // resulting string limited to 128 chars
